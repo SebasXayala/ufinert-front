@@ -13,10 +13,13 @@ export async function loginWithNextAuth(username: string, password: string): Pro
       redirect: false,
     });
 
+    console.log("SignIn result:", result);
+
     if (result?.error) {
-      return { 
-        error: result.error, 
-        status: 401 
+      console.error("SignIn error:", result.error);
+      return {
+        error: result.error === "CredentialsSignin" ? "Credenciales inválidas" : result.error,
+        status: 401
       };
     }
 
@@ -24,15 +27,15 @@ export async function loginWithNextAuth(username: string, password: string): Pro
       return { status: 200 };
     }
 
-    return { 
-      error: 'Error de autenticación', 
-      status: 500 
+    return {
+      error: 'Error de autenticación desconocido',
+      status: 500
     };
   } catch (error) {
     console.error('Login error:', error);
-    return { 
-      error: 'Error de conexión', 
-      status: 500 
+    return {
+      error: 'Error de conexión',
+      status: 500
     };
   }
 }

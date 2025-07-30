@@ -20,7 +20,6 @@ export default function SeleccionPage() {
   const [editingCar, setEditingCar] = useState<Car | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Filtros
   const [searchTerm, setSearchTerm] = useState('');
   const [yearFilter, setYearFilter] = useState('');
   const [brandFilter, setBrandFilter] = useState('');
@@ -53,7 +52,6 @@ export default function SeleccionPage() {
     }
   }, [session]);
 
-  // Filtrar autos
   useEffect(() => {
     let filtered = cars;
 
@@ -98,7 +96,7 @@ export default function SeleccionPage() {
 
   const handleUpdateCar = async (data: CarFormData) => {
     if (!editingCar?.id) return;
-    
+
     setIsSubmitting(true);
     try {
       const updatedCar = await updateCar(editingCar.id, data);
@@ -115,7 +113,7 @@ export default function SeleccionPage() {
 
   const handleDeleteCar = async (car: Car) => {
     if (!car.id) return;
-    
+
     if (window.confirm(`¿Estás seguro de que quieres eliminar el auto ${car.brand} ${car.model}?`)) {
       try {
         await deleteCar(car.id);
@@ -151,7 +149,7 @@ export default function SeleccionPage() {
 
   // Obtener años únicos para el filtro
   const uniqueYears = [...new Set(cars.map(car => car.year))].sort((a, b) => b.localeCompare(a));
-  
+
   // Obtener marcas únicas para el filtro
   const uniqueBrands = [...new Set(cars.map(car => car.brand))].sort();
 
@@ -171,7 +169,7 @@ export default function SeleccionPage() {
           <h1>Sistema de Gestión de Autos</h1>
           <div className="header-right">
             <span className="user-info">Hola, {session.user?.email}</span>
-            <button 
+            <button
               onClick={() => signOut({ callbackUrl: "/" })}
               className="logout-btn"
             >
@@ -290,7 +288,7 @@ export default function SeleccionPage() {
             <div className="empty-state">
               <h3>No hay autos que mostrar</h3>
               <p>
-                {cars.length === 0 
+                {cars.length === 0
                   ? "No hay autos registrados. ¡Agrega el primer auto!"
                   : "No se encontraron autos con los filtros aplicados."
                 }
