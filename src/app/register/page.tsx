@@ -2,19 +2,19 @@
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Car } from "lucide-react"
-import '../../styles/globals.css'
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { VALIDATION_MESSAGES, ROUTES } from "../../constants"
 
 // Zod schema for register form
 const registerSchema = z.object({
-  username: z.string().min(2, { message: "El nombre de usuario debe tener al menos 2 caracteres" }),
-  email: z.string().email({ message: "Email inválido" }),
-  password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres" }),
-  confirmPassword: z.string().min(6, { message: "Confirma tu contraseña" })
+  username: z.string().min(2, { message: VALIDATION_MESSAGES.USERNAME_MIN }),
+  email: z.string().email({ message: VALIDATION_MESSAGES.EMAIL_INVALID }),
+  password: z.string().min(6, { message: VALIDATION_MESSAGES.PASSWORD_MIN }),
+  confirmPassword: z.string().min(6, { message: VALIDATION_MESSAGES.CONFIRM_PASSWORD })
 }).refine((data) => data.password === data.confirmPassword, {
-  message: "Las contraseñas no coinciden",
+  message: VALIDATION_MESSAGES.PASSWORDS_NOT_MATCH,
   path: ["confirmPassword"],
 })
 
@@ -33,16 +33,16 @@ export default function RegisterPage() {
 
   const onSubmit = async (data: RegisterForm) => {
     if (!data.email || !data.password || !data.username) return
-    
+
     // Crear el objeto de registro en el formato requerido
     const registerData = {
       username: data.username,
       password: data.password,
       email: data.email
     }
-    
+
     console.log("Datos de registro:", registerData)
-    
+
     // Aquí iría la lógica de registro con tu API
     // Por ahora simulamos un registro exitoso
     alert("Registro exitoso! Redirigiendo al login...")
@@ -64,7 +64,7 @@ export default function RegisterPage() {
             <Car className="w-12 h-12 mx-auto mb-2" />
             <h1>Registro</h1>
           </div>
-          
+
           <form onSubmit={handleSubmit(onSubmit)} className="login-form">
             <div className="form-group">
               <label htmlFor="username" className="form-label">Nombre de Usuario</label>
@@ -133,7 +133,7 @@ export default function RegisterPage() {
 
           <div className="login-recover-container">
             <span>¿Ya tienes cuenta?</span>
-            <Link href="/" className="login-recover-link">
+            <Link href={ROUTES.LOGIN} className="login-recover-link">
               Iniciar Sesión
             </Link>
           </div>

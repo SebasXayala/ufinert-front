@@ -2,7 +2,7 @@
 "use client";
 
 import { Pencil, Trash2 } from 'lucide-react';
-import { Car } from '../services/autoService';
+import { Car } from '../types';
 
 interface CarCardProps {
   car: Car;
@@ -15,8 +15,8 @@ export default function CarCard({ car, onEdit, onDelete }: CarCardProps) {
     <div className="car-card">
       {car.imageUrl && (
         <div className="car-image-container">
-          <img 
-            src={car.imageUrl} 
+          <img
+            src={car.imageUrl}
             alt={`${car.brand} ${car.model}`}
             className="car-image"
             onError={(e) => {
@@ -26,7 +26,7 @@ export default function CarCard({ car, onEdit, onDelete }: CarCardProps) {
           />
         </div>
       )}
-      
+
       <div className="car-header">
         <h3 className="car-title">{car.brand} {car.model}</h3>
         <div className="car-actions">
@@ -46,7 +46,7 @@ export default function CarCard({ car, onEdit, onDelete }: CarCardProps) {
           </button>
         </div>
       </div>
-      
+
       <div className="car-details">
         <div className="car-detail">
           <span className="detail-label">Año:</span>

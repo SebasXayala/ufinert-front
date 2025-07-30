@@ -4,10 +4,11 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Search, Calendar, Building2, Filter } from "lucide-react";
-import { getCars, createCar, updateCar, deleteCar, Car, CarCreateRequest } from "../../services/autoService";
-import { CarFormData } from "../../schemas/autoSchemas";
+import { getCars, createCar, updateCar, deleteCar } from "../../services/autoService";
+import { Car, CarFormData } from "../../types";
 import CarModal from "../../components/CarModal";
 import CarCard from "../../components/CarCard";
+import { ROUTES } from "../../constants";
 
 export default function SeleccionPage() {
   const { data: session, status } = useSession();
@@ -26,7 +27,7 @@ export default function SeleccionPage() {
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/");
+      router.push(ROUTES.LOGIN);
     }
   }, [status, router]);
 
@@ -170,7 +171,7 @@ export default function SeleccionPage() {
           <div className="header-right">
             <span className="user-info">Hola, {session.user?.email}</span>
             <button
-              onClick={() => signOut({ callbackUrl: "/" })}
+              onClick={() => signOut({ callbackUrl: ROUTES.LOGIN })}
               className="logout-btn"
             >
               Cerrar Sesión

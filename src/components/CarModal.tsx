@@ -5,7 +5,8 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { carSchema, CarFormData } from '../schemas/autoSchemas';
-import { Car } from '../services/autoService';
+import { Car } from '../types';
+import { getCurrentYear } from '../utils';
 
 interface CarModalProps {
   isOpen: boolean;
@@ -29,7 +30,7 @@ export default function CarModal({ isOpen, onClose, onSubmit, car, title, isLoad
       model: '',
       brand: '',
       color: '',
-      year: new Date().getFullYear().toString(),
+      year: getCurrentYear(),
       plateNumber: '',
       imageUrl: ''
     }
@@ -71,7 +72,7 @@ export default function CarModal({ isOpen, onClose, onSubmit, car, title, isLoad
         <div className="modal-header">
           <h2 className="modal-title">{title}</h2>
         </div>
-        
+
         <div className="modal-body">
           <form onSubmit={handleSubmit(handleFormSubmit)} className="form-grid">
             <div className="form-row">

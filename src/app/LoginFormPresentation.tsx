@@ -1,5 +1,5 @@
 import { FieldErrors, UseFormRegister } from "react-hook-form";
-import { LoginForm } from "./types";
+import { LoginForm } from "../types";
 
 interface LoginFormPresentationProps {
   onSubmit: () => void;
@@ -8,11 +8,11 @@ interface LoginFormPresentationProps {
   isLoading: boolean;
 }
 
-export function LoginFormPresentation({ 
-  onSubmit, 
-  errors, 
-  register, 
-  isLoading 
+export function LoginFormPresentation({
+  onSubmit,
+  errors,
+  register,
+  isLoading
 }: LoginFormPresentationProps) {
   return (
     <form onSubmit={onSubmit} className="login-form">
@@ -44,8 +44,8 @@ export function LoginFormPresentation({
         )}
       </div>
 
-      <button 
-        type="submit" 
+      <button
+        type="submit"
         className="login-button"
         disabled={isLoading}
       >

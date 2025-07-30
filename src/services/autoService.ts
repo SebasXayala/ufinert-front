@@ -1,5 +1,6 @@
 // src/services/autoService.ts
 import { mockCars } from '../data/mockCars';
+import { generateId, delay, formatPlateNumber } from '../utils';
 
 export interface Car {
   id?: string;
@@ -20,7 +21,7 @@ export interface CarCreateRequest {
   imageUrl?: string;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL ;
+const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 const USE_MOCK_DATA = process.env.NEXT_PUBLIC_USE_MOCK === 'true' || true; // Activar mock por defecto
 
 const getAuthHeaders = () => {
@@ -36,12 +37,6 @@ const handleApiError = (error: any): never => {
   throw error;
 };
 
-// Simular delay de red
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Generar ID único para mock
-const generateId = () => Date.now().toString() + Math.random().toString(36).substr(2, 9);
-
 // Storage local para mock data
 let mockStorage: Car[] = [...mockCars];
 
@@ -55,7 +50,7 @@ export const getCars = async (): Promise<Car[]> => {
 
   try {
     const url = `${API_BASE_URL}/api/cars`;
-    
+
     const res = await fetch(url, {
       method: "GET",
       headers: getAuthHeaders(),
@@ -90,7 +85,7 @@ export const createCar = async (carData: CarCreateRequest): Promise<Car> => {
 
   try {
     const url = `${API_BASE_URL}/api/cars`;
-    
+
     const res = await fetch(url, {
       method: "POST",
       headers: getAuthHeaders(),
@@ -124,7 +119,7 @@ export const updateCar = async (id: string, carData: Partial<CarCreateRequest>):
     if (index === -1) {
       throw new Error('Auto no encontrado');
     }
-    
+
     const updatedCar = { ...mockStorage[index], ...carData };
     mockStorage[index] = updatedCar;
     console.log('🎭 Auto actualizado en mock:', updatedCar);
@@ -133,7 +128,7 @@ export const updateCar = async (id: string, carData: Partial<CarCreateRequest>):
 
   try {
     const url = `${API_BASE_URL}/api/cars/${id}`;
-    
+
     const res = await fetch(url, {
       method: "PUT",
       headers: getAuthHeaders(),
@@ -154,7 +149,7 @@ export const updateCar = async (id: string, carData: Partial<CarCreateRequest>):
     if (index === -1) {
       throw new Error('Auto no encontrado');
     }
-    
+
     const updatedCar = { ...mockStorage[index], ...carData };
     mockStorage[index] = updatedCar;
     return updatedCar;
@@ -169,7 +164,7 @@ export const deleteCar = async (id: string): Promise<void> => {
     if (index === -1) {
       throw new Error('Auto no encontrado');
     }
-    
+
     mockStorage.splice(index, 1);
     console.log('🎭 Auto eliminado del mock, ID:', id);
     return;
@@ -177,7 +172,7 @@ export const deleteCar = async (id: string): Promise<void> => {
 
   try {
     const url = `${API_BASE_URL}/api/cars/${id}`;
-    
+
     const res = await fetch(url, {
       method: "DELETE",
       headers: getAuthHeaders(),
@@ -194,7 +189,7 @@ export const deleteCar = async (id: string): Promise<void> => {
     if (index === -1) {
       throw new Error('Auto no encontrado');
     }
-    
+
     mockStorage.splice(index, 1);
   }
 };

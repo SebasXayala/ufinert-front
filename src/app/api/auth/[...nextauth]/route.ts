@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { ROUTES } from "../../../../constants";
 
 const handler = NextAuth({
   providers: [
@@ -69,8 +70,8 @@ const handler = NextAuth({
     },
   },
   pages: {
-    signIn: "/",
-    error: "/auth/error",
+    signIn: ROUTES.LOGIN,
+    error: ROUTES.AUTH_ERROR,
   },
   session: {
     strategy: "jwt",
