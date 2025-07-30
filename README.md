@@ -1,36 +1,100 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🚗 Sistema de Gestión de Autos
 
-## Getting Started
+Un sistema moderno y responsivo para la gestión de automóviles construido con Next.js 15, TypeScript y NextAuth.
 
-First, run the development server:
+## ✨ Características
 
+### 🎯 Funcionalidades Principales
+- **Autenticación segura** con NextAuth.js
+- **CRUD completo** de automóviles (Crear, Leer, Actualizar, Eliminar)
+- **Búsqueda avanzada** por marca, modelo, placa o color
+- **Filtros inteligentes** por año y marca
+- **Subida de imágenes** (campo simulado con URLs)
+- **Diseño responsive** para todos los dispositivos
+- **Modo demo** con datos de prueba
+
+### 🎨 Diseño y UX
+- Interfaz moderna y limpia
+- Tarjetas de autos con imágenes
+- Animaciones suaves
+- Estadísticas en tiempo real
+- Modal para crear/editar autos
+- Indicadores de carga
+
+### 📱 Responsive Design
+- **Desktop** (1200px+): Grid de 3-4 columnas
+- **Tablet** (768px-1199px): Grid de 2-3 columnas  
+- **Mobile** (480px-767px): Grid de 1 columna
+- **Mobile pequeño** (<480px): Layout optimizado
+
+## 🚀 Instalación y Uso
+
+### Prerrequisitos
+- Node.js 18+ 
+- npm o yarn
+
+### Instalación
 ```bash
+# Instalar dependencias
+npm install
+
+# Ejecutar en modo desarrollo
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Variables de Entorno
+```env
+# .env.local
+NEXTAUTH_SECRET=tu_secreto_aqui
+NEXTAUTH_URL=http://localhost:3000
+NEXT_PUBLIC_BACKEND_URL=http://localhost:3001
+NEXT_PUBLIC_USE_MOCK=true
+```
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## 🎭 Modo Demo
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+El sistema incluye un modo demo que utiliza datos de prueba:
 
-## Learn More
+- **8 autos de ejemplo** con imágenes reales
+- **Todas las operaciones CRUD** funcionan en memoria
+- **Datos persistentes** durante la sesión
+- **Simula delays** de red realistas
 
-To learn more about Next.js, take a look at the following resources:
+## 🔐 Autenticación
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Credenciales de Prueba
+- **Email**: `admin@example.com`
+- **Password**: `password123`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🔍 Funcionalidades
 
-## Deploy on Vercel
+### Búsqueda General
+Busca en todos los campos principales:
+- Marca del auto
+- Modelo del auto  
+- Número de placa
+- Color del auto
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Filtros Específicos
+- **Por Año**: Dropdown con años disponibles
+- **Por Marca**: Dropdown con marcas disponibles
+- **Limpiar Filtros**: Resetea todos los filtros
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Gestión de Imágenes
+- Campo URL para imagen del auto
+- Soporte para URLs de Unsplash
+- Vista previa en tarjetas
+- Fallback cuando no hay imagen
+
+## 📊 Tecnologías Utilizadas
+
+- **Next.js 15** - Framework React
+- **TypeScript** - Tipado estático
+- **NextAuth.js** - Autenticación
+- **React Hook Form** - Manejo de formularios
+- **Zod** - Validación de schemas
+- **CSS Modules** - Estilos modulares
+
+---
+
+**¡Disfruta gestionando tus autos!** 🚗✨

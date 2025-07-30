@@ -1,0 +1,144 @@
+"use client"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { Car } from "lucide-react"
+import '../../styles/globals.css'
+import { useForm } from "react-hook-form"
+import { z } from "zod"
+import { zodResolver } from "@hookform/resolvers/zod"
+
+// Zod schema for register form
+const registerSchema = z.object({
+  username: z.string().min(2, { message: "El nombre de usuario debe tener al menos 2 caracteres" }),
+  email: z.string().email({ message: "Email inválido" }),
+  password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres" }),
+  confirmPassword: z.string().min(6, { message: "Confirma tu contraseña" })
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Las contraseñas no coinciden",
+  path: ["confirmPassword"],
+})
+
+type RegisterForm = z.infer<typeof registerSchema>
+
+export default function RegisterPage() {
+  const router = useRouter()
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting }
+  } = useForm<RegisterForm>({
+    resolver: zodResolver(registerSchema)
+  })
+
+  const onSubmit = async (data: RegisterForm) => {
+    if (!data.email || !data.password || !data.username) return
+    
+    // Crear el objeto de registro en el formato requerido
+    const registerData = {
+      username: data.username,
+      password: data.password,
+      email: data.email
+    }
+    
+    console.log("Datos de registro:", registerData)
+    
+    // Aquí iría la lógica de registro con tu API
+    // Por ahora simulamos un registro exitoso
+    alert("Registro exitoso! Redirigiendo al login...")
+    router.push("/")
+  }
+
+  return (
+    <div className="login-container">
+      {/* Left side */}
+      <div className="login-left">
+        <div className="login-left-content">
+          {/* Puedes dejar vacío o agregar algo si lo deseas */}
+        </div>
+      </div>
+      {/* Right side */}
+      <div className="login-right">
+        <div className="login-form-container">
+          <div className="login-title">
+            <Car className="w-12 h-12 mx-auto mb-2" />
+            <h1>Registro</h1>
+          </div>
+          
+          <form onSubmit={handleSubmit(onSubmit)} className="login-form">
+            <div className="form-group">
+              <label htmlFor="username" className="form-label">Nombre de Usuario</label>
+              <input
+                id="username"
+                type="text"
+                {...register("username")}
+                className={`form-input ${errors.username ? 'error' : ''}`}
+                placeholder="Ingresa tu nombre de usuario"
+              />
+              {errors.username && (
+                <span className="error-message">{errors.username.message}</span>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="email" className="form-label">Email</label>
+              <input
+                id="email"
+                type="email"
+                {...register("email")}
+                className={`form-input ${errors.email ? 'error' : ''}`}
+                placeholder="Ingresa tu email"
+              />
+              {errors.email && (
+                <span className="error-message">{errors.email.message}</span>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="password" className="form-label">Contraseña</label>
+              <input
+                id="password"
+                type="password"
+                {...register("password")}
+                className={`form-input ${errors.password ? 'error' : ''}`}
+                placeholder="Ingresa tu contraseña"
+              />
+              {errors.password && (
+                <span className="error-message">{errors.password.message}</span>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="confirmPassword" className="form-label">Confirmar Contraseña</label>
+              <input
+                id="confirmPassword"
+                type="password"
+                {...register("confirmPassword")}
+                className={`form-input ${errors.confirmPassword ? 'error' : ''}`}
+                placeholder="Confirma tu contraseña"
+              />
+              {errors.confirmPassword && (
+                <span className="error-message">{errors.confirmPassword.message}</span>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="login-submit-btn"
+            >
+              {isSubmitting ? "Registrando..." : "Registrarse"}
+            </button>
+          </form>
+
+          <div className="login-recover-container">
+            <span>¿Ya tienes cuenta?</span>
+            <Link href="/" className="login-recover-link">
+              Iniciar Sesión
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
