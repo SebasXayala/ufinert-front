@@ -55,7 +55,8 @@ const parseApiResponse = async (response: Response): Promise<any> => {
 
         try {
             const errorData = JSON.parse(errorText);
-            errorMessage = errorData.message || errorData.error || errorMessage;
+
+            errorMessage = errorData.error || errorData.message || errorMessage;
         } catch {
             // Keep original error if parsing fails
         }
