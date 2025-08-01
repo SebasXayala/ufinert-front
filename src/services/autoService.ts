@@ -1,8 +1,14 @@
 // src/services/autoService.ts
 import { mockCars } from '../data/mockCars';
-import { generateId, delay, formatPlateNumber } from '../utils';
+import { generateId, delay } from '../utils';
 
-// Interfaces exportadas para uso en types/index.ts
+// Interfaces
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+}
+
 export interface Car {
   id?: string | number;
   model: string;
@@ -11,11 +17,7 @@ export interface Car {
   year: string | number;
   plateNumber: string;
   imageUrl?: string;
-  user?: {
-    id: number;
-    username: string;
-    email: string;
-  };
+  user?: User;
 }
 
 export interface CarCreateRequest {
@@ -27,260 +29,267 @@ export interface CarCreateRequest {
   imageUrl?: string;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
-const USE_MOCK_DATA = process.env.NEXT_PUBLIC_USE_MOCK === 'true';
+// Configuration
+interface ApiConfig {
+  baseUrl: string;
+  useMockData: boolean;
+}
 
-const getAuthHeaders = (token?: string) => {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-    console.log('🔑 Token agregado a headers:', token.substring(0, 20) + '...');
-  } else {
-    console.warn('⚠️ No se proporcionó token de autenticación');
-  }
-
-  return headers;
+const config: ApiConfig = {
+  baseUrl: process.env.NEXT_PUBLIC_BACKEND_URL || '',
+  useMockData: process.env.NEXT_PUBLIC_USE_MOCK === 'true',
 };
 
-const handleApiError = (error: any): never => {
-  if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
-    throw new Error('No se puede conectar con el servidor. Usando datos de prueba...');
+// Validar configuración al inicio
+if (!config.useMockData && !config.baseUrl) {
+  console.warn('⚠️ NEXT_PUBLIC_BACKEND_URL no está configurada. Usando mock data como fallback.');
+}
+
+// HTTP utilities
+const createHeaders = (token?: string): HeadersInit => ({
+  'Content-Type': 'application/json',
+  ...(token && { Authorization: `Bearer ${token}` }),
+});
+
+const createApiUrl = (endpoint: string): string => `${config.baseUrl}/api/cars${endpoint}`;
+
+const parseApiResponse = async (response: Response): Promise<any> => {
+  if (!response.ok) {
+    const errorText = await response.text();
+    let errorMessage = `Error ${response.status}: ${response.statusText}`;
+
+    try {
+      const errorData = JSON.parse(errorText);
+      errorMessage = errorData.message || errorData.error || errorMessage;
+
+      // Log detallado para debugging
+      console.error('API Error Details:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorData,
+        errorText
+      });
+    } catch {
+      // Log el texto crudo si no se puede parsear como JSON
+      console.error('Raw API Error:', errorText);
+    }
+
+    throw new Error(errorMessage);
   }
-  throw error;
+
+  return response.json();
 };
 
-// Storage local para mock data
+// Data normalization and validation
+export const validatePlateNumber = (plateNumber: string): boolean => {
+  // Formato: 3 letras seguidas de 3 números (ABC123)
+  const plateRegex = /^[A-Z]{3}\d{3}$/i;
+  return plateRegex.test(plateNumber);
+};
+
+const normalizeCar = (carData: any): Car => ({
+  id: carData.id?.toString() || carData.id,
+  model: carData.model,
+  brand: carData.brand,
+  color: carData.color,
+  year: carData.year?.toString() || carData.year,
+  plateNumber: carData.plateNumber,
+  imageUrl: carData.imageUrl || '',
+  user: carData.user,
+});
+
+const normalizeApiData = (data: any): Car[] => {
+  const carsArray = Array.isArray(data) ? data : data.data || [];
+  return carsArray.map(normalizeCar);
+};
+
+// Mock data storage
 let mockStorage: Car[] = [...mockCars];
 
-// Obtener todos los autos con filtros opcionales
-export const getCars = async (token?: string): Promise<Car[]> => {
-  if (USE_MOCK_DATA) {
-    await delay(500); // Simular delay de red
-    console.log('🎭 Usando datos de prueba (mock)');
-    return mockStorage;
-  }
-
-  try {
-    const url = `${API_BASE_URL}/api/cars`;
-
-    const res = await fetch(url, {
-      method: "GET",
-      headers: getAuthHeaders(token),
-    });
-
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || `Error ${res.status}: ${res.statusText}`);
-    }
-
-    const data = await res.json();
-    console.log('✅ Autos obtenidos del backend:', data);
-
-    const carsArray = Array.isArray(data) ? data : data.data || [];
-
-    // Normalizar los datos para asegurar compatibilidad
-    const normalizedCars: Car[] = carsArray.map((car: any) => ({
-      id: car.id?.toString() || car.id,
-      model: car.model,
-      brand: car.brand,
-      color: car.color,
-      year: car.year?.toString() || car.year,
-      plateNumber: car.plateNumber,
-      imageUrl: car.imageUrl || '',
-      user: car.user
-    }));
-
-    return normalizedCars;
-  } catch (error) {
-    console.warn('⚠️ Error conectando al backend:', error);
-    handleApiError(error);
-  }
+// Mock service functions
+const getCarsFromMock = async (): Promise<Car[]> => {
+  await delay(500);
+  return [...mockStorage];
 };
 
-// Crear nuevo auto
-export const createCar = async (carData: CarCreateRequest, token?: string): Promise<Car> => {
-  console.log('🚗 Iniciando creación de auto:', carData);
-  console.log('🔑 Token disponible:', !!token);
-  console.log('🎭 Usando mock data:', USE_MOCK_DATA);
-
-  if (USE_MOCK_DATA) {
-    await delay(800);
-    const newCar: Car = {
-      ...carData,
-      id: generateId()
-    };
-    mockStorage.push(newCar);
-    console.log('🎭 Auto creado en mock:', newCar);
-    return newCar;
+const createCarInMock = async (carData: CarCreateRequest): Promise<Car> => {
+  // Validar formato de placa
+  if (!validatePlateNumber(carData.plateNumber)) {
+    throw new Error('La placa debe tener el formato de 3 letras seguidas de 3 números, por ejemplo: ABC123');
   }
 
+  await delay(800);
+  const newCar: Car = {
+    ...carData,
+    id: generateId(),
+    plateNumber: carData.plateNumber.toUpperCase() // Normalizar a mayúsculas
+  };
+  mockStorage.push(newCar);
+  return newCar;
+};
+
+const updateCarInMock = async (id: string, carData: Partial<CarCreateRequest>): Promise<Car> => {
+  // Validar formato de placa si se está actualizando
+  if (carData.plateNumber && !validatePlateNumber(carData.plateNumber)) {
+    throw new Error('La placa debe tener el formato de 3 letras seguidas de 3 números, por ejemplo: ABC123');
+  }
+
+  await delay(800);
+  const index = mockStorage.findIndex(car => car.id?.toString() === id);
+
+  if (index === -1) {
+    throw new Error('Auto no encontrado');
+  }
+
+  const updatedCar = {
+    ...mockStorage[index],
+    ...carData,
+    // Normalizar placa a mayúsculas si está presente
+    ...(carData.plateNumber && { plateNumber: carData.plateNumber.toUpperCase() })
+  };
+  mockStorage[index] = updatedCar;
+  return updatedCar;
+};
+
+const deleteCarFromMock = async (id: string): Promise<void> => {
+  await delay(500);
+  const index = mockStorage.findIndex(car => car.id?.toString() === id);
+
+  if (index === -1) {
+    throw new Error('Auto no encontrado');
+  }
+
+  mockStorage.splice(index, 1);
+};
+
+// API service functions
+const getCarsFromApi = async (token?: string): Promise<Car[]> => {
+  if (!config.baseUrl) {
+    throw new Error('Backend URL not configured');
+  }
+
+  const response = await fetch(createApiUrl(''), {
+    method: 'GET',
+    headers: createHeaders(token),
+  });
+
+  const data = await parseApiResponse(response);
+  return normalizeApiData(data);
+};
+
+const createCarInApi = async (carData: CarCreateRequest, token?: string): Promise<Car> => {
+  if (!config.baseUrl) {
+    throw new Error('Backend URL not configured');
+  }
+
+  // Validar formato de placa antes de enviar
+  if (!validatePlateNumber(carData.plateNumber)) {
+    throw new Error('La placa debe tener el formato de 3 letras seguidas de 3 números, por ejemplo: ABC123');
+  }
+
+  // El backend espera year como string, no como número
+  const payload = {
+    ...carData,
+    year: carData.year.toString(), // Asegurar que year sea string
+    plateNumber: carData.plateNumber.toUpperCase() // Normalizar a mayúsculas
+  };
+
+  console.log('Sending car data to API:', payload);
+  console.log('API URL:', createApiUrl(''));
+  console.log('Headers:', createHeaders(token));
+
+  const response = await fetch(createApiUrl(''), {
+    method: 'POST',
+    headers: createHeaders(token),
+    body: JSON.stringify(payload),
+  });
+
+  const data = await parseApiResponse(response);
+  return normalizeCar(data);
+};
+
+const updateCarInApi = async (id: string, carData: Partial<CarCreateRequest>, token?: string): Promise<Car> => {
+  // Validar formato de placa si se está actualizando
+  if (carData.plateNumber && !validatePlateNumber(carData.plateNumber)) {
+    throw new Error('La placa debe tener el formato de 3 letras seguidas de 3 números, por ejemplo: ABC123');
+  }
+
+  const payload = {
+    ...carData,
+    // Asegurar que year sea string si está presente
+    ...(carData.year && { year: carData.year.toString() }),
+    // Normalizar placa a mayúsculas si está presente
+    ...(carData.plateNumber && { plateNumber: carData.plateNumber.toUpperCase() }),
+  };
+
+  const response = await fetch(createApiUrl(`/${id}`), {
+    method: 'PUT',
+    headers: createHeaders(token),
+    body: JSON.stringify(payload),
+  });
+
+  const data = await parseApiResponse(response);
+  return normalizeCar(data);
+};
+
+const deleteCarFromApi = async (id: string, token?: string): Promise<void> => {
+  const response = await fetch(createApiUrl(`/${id}`), {
+    method: 'DELETE',
+    headers: createHeaders(token),
+  });
+
+  await parseApiResponse(response);
+};
+
+// Public API functions
+export const getCars = async (token?: string): Promise<Car[]> => {
   try {
-    const url = `${API_BASE_URL}/api/cars`;
-    console.log('📡 URL de creación:', url);
-
-    // Convertir year a número para el backend
-    const dataToSend = {
-      ...carData,
-      year: typeof carData.year === 'string' ? parseInt(carData.year) : carData.year
-    };
-
-    console.log('📦 Datos a enviar:', JSON.stringify(dataToSend, null, 2));
-
-    const headers = getAuthHeaders(token);
-    console.log('📋 Headers de la petición:', headers);
-
-    const res = await fetch(url, {
-      method: "POST",
-      headers: headers,
-      body: JSON.stringify(dataToSend),
-    });
-
-    console.log('📥 Respuesta del servidor:', {
-      status: res.status,
-      statusText: res.statusText,
-      ok: res.ok,
-      url: res.url,
-      headers: Object.fromEntries(res.headers.entries())
-    });
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error('❌ Error del servidor (texto):', errorText);
-
-      let errorData = {};
-      try {
-        errorData = JSON.parse(errorText);
-      } catch (e) {
-        console.error('❌ No se pudo parsear el error como JSON');
-      }
-
-      console.error('❌ Error del servidor (parseado):', errorData);
-      const errorMessage = (errorData as any)?.message || errorText || `Error ${res.status}: ${res.statusText}`;
-      throw new Error(errorMessage);
-    }
-
-    const data = await res.json();
-    console.log('✅ Auto creado en backend:', data);
-
-    // Normalizar la respuesta para asegurar compatibilidad
-    const normalizedCar: Car = {
-      id: data.id?.toString() || data.id,
-      model: data.model,
-      brand: data.brand,
-      color: data.color,
-      year: data.year?.toString() || data.year,
-      plateNumber: data.plateNumber,
-      imageUrl: data.imageUrl || '',
-      user: data.user
-    };
-
-    return normalizedCar;
+    return config.useMockData ? await getCarsFromMock() : await getCarsFromApi(token);
   } catch (error) {
-    console.error('❌ Error completo en createCar:', error);
-    if (error instanceof Error) {
-      console.error('❌ Error message:', error.message);
-      console.error('❌ Error stack:', error.stack);
+    if (error instanceof Error && error.message.includes('Failed to fetch')) {
+      console.warn('API not available, falling back to mock data');
+      return getCarsFromMock();
     }
     throw error;
   }
 };
 
-// Actualizar auto
-export const updateCar = async (id: string | number, carData: Partial<CarCreateRequest>, token?: string): Promise<Car> => {
-  const idString = id.toString(); // Normalizar ID a string
-
-  if (USE_MOCK_DATA) {
-    await delay(800);
-    const index = mockStorage.findIndex(car => car.id?.toString() === idString);
-    if (index === -1) {
-      throw new Error('Auto no encontrado');
-    }
-
-    const updatedCar = { ...mockStorage[index], ...carData };
-    mockStorage[index] = updatedCar;
-    console.log('🎭 Auto actualizado en mock:', updatedCar);
-    return updatedCar;
-  }
-
+export const createCar = async (carData: CarCreateRequest, token?: string): Promise<Car> => {
   try {
-    const url = `${API_BASE_URL}/api/cars/${idString}`;
-
-    // Convertir year a número si existe
-    const dataToSend = {
-      ...carData,
-      ...(carData.year && {
-        year: typeof carData.year === 'string' ? parseInt(carData.year) : carData.year
-      })
-    };
-
-    const res = await fetch(url, {
-      method: "PUT",
-      headers: getAuthHeaders(token),
-      body: JSON.stringify(dataToSend),
-    });
-
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || `Error ${res.status}: ${res.statusText}`);
-    }
-
-    const data = await res.json();
-    console.log('✅ Auto actualizado en backend:', data);
-
-    // Normalizar la respuesta para asegurar compatibilidad
-    const normalizedCar: Car = {
-      id: data.id?.toString() || data.id,
-      model: data.model,
-      brand: data.brand,
-      color: data.color,
-      year: data.year?.toString() || data.year,
-      plateNumber: data.plateNumber,
-      imageUrl: data.imageUrl || '',
-      user: data.user
-    };
-
-    return normalizedCar;
+    return config.useMockData ? await createCarInMock(carData) : await createCarInApi(carData, token);
   } catch (error) {
-    console.warn('⚠️ Error conectando al backend para actualizar:', error);
-    handleApiError(error);
+    if (error instanceof Error && error.message.includes('Failed to fetch')) {
+      console.warn('API not available, falling back to mock data');
+      return createCarInMock(carData);
+    }
+    throw error;
   }
 };
 
-// Eliminar auto
-export const deleteCar = async (id: string | number, token?: string): Promise<void> => {
-  const idString = id.toString(); // Normalizar ID a string
-
-  if (USE_MOCK_DATA) {
-    await delay(500);
-    const index = mockStorage.findIndex(car => car.id?.toString() === idString);
-    if (index === -1) {
-      throw new Error('Auto no encontrado');
-    }
-
-    mockStorage.splice(index, 1);
-    console.log('🎭 Auto eliminado del mock, ID:', idString);
-    return;
-  }
+export const updateCar = async (id: string | number, carData: Partial<CarCreateRequest>, token?: string): Promise<Car> => {
+  const carId = id.toString();
 
   try {
-    const url = `${API_BASE_URL}/api/cars/${idString}`;
-
-    const res = await fetch(url, {
-      method: "DELETE",
-      headers: getAuthHeaders(token),
-    });
-
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || `Error ${res.status}: ${res.statusText}`);
-    }
-
-    console.log('✅ Auto eliminado del backend, ID:', idString);
+    return config.useMockData ? await updateCarInMock(carId, carData) : await updateCarInApi(carId, carData, token);
   } catch (error) {
-    console.warn('⚠️ Error conectando al backend para eliminar:', error);
-    handleApiError(error);
+    if (error instanceof Error && error.message.includes('Failed to fetch')) {
+      console.warn('API not available, falling back to mock data');
+      return updateCarInMock(carId, carData);
+    }
+    throw error;
+  }
+};
+
+export const deleteCar = async (id: string | number, token?: string): Promise<void> => {
+  const carId = id.toString();
+
+  try {
+    return config.useMockData ? await deleteCarFromMock(carId) : await deleteCarFromApi(carId, token);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('Failed to fetch')) {
+      console.warn('API not available, falling back to mock data');
+      return deleteCarFromMock(carId);
+    }
+    throw error;
   }
 };
