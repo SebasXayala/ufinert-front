@@ -13,6 +13,14 @@ export interface RegisterForm {
     confirmPassword: string;
 }
 
+// Auth service types (re-exportados desde services)
+export type {
+    LoginRequest,
+    RegisterRequest,
+    AuthResponse,
+    RegisterResponse
+} from '../services/authService';
+
 // Car types (re-exportados desde services para mejor organización)
 export type { Car, CarCreateRequest } from '../services/autoService';
 export type { CarFormData } from '../schemas/autoSchemas';

@@ -6,6 +6,8 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { VALIDATION_MESSAGES, ROUTES } from "../../constants"
+import { registerUser } from "../../services/authService"
+import { useState } from "react"
 
 // Zod schema for register form
 const registerSchema = z.object({
@@ -22,6 +24,7 @@ type RegisterForm = z.infer<typeof registerSchema>
 
 export default function RegisterPage() {
   const router = useRouter()
+  const [error, setError] = useState<string>("")
 
   const {
     register,
@@ -32,21 +35,32 @@ export default function RegisterPage() {
   })
 
   const onSubmit = async (data: RegisterForm) => {
-    if (!data.email || !data.password || !data.username) return
+    try {
+      setError("") // Limpiar errores previos
 
-    // Crear el objeto de registro en el formato requerido
-    const registerData = {
-      username: data.username,
-      password: data.password,
-      email: data.email
+      if (!data.email || !data.password || !data.username) return
+
+      // Crear el objeto de registro en el formato requerido
+      const registerData = {
+        username: data.username,
+        password: data.password,
+        email: data.email
+      }
+
+      console.log("Datos de registro:", registerData)
+
+      // Llamar al servicio de registro
+      const response = await registerUser(registerData)
+
+      console.log("Registro exitoso:", response)
+      alert(`¡${response.message}! Redirigiendo al login...`)
+      router.push("/")
+
+    } catch (error) {
+      console.error("Error en registro:", error)
+      const errorMessage = error instanceof Error ? error.message : "Error desconocido en el registro"
+      setError(errorMessage)
     }
-
-    console.log("Datos de registro:", registerData)
-
-    // Aquí iría la lógica de registro con tu API
-    // Por ahora simulamos un registro exitoso
-    alert("Registro exitoso! Redirigiendo al login...")
-    router.push("/")
   }
 
   return (
@@ -66,6 +80,12 @@ export default function RegisterPage() {
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="login-form">
+            {error && (
+              <div className="error-message mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                {error}
+              </div>
+            )}
+
             <div className="form-group">
               <label htmlFor="username" className="form-label">Nombre de Usuario</label>
               <input
