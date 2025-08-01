@@ -11,8 +11,27 @@ import CarCard from "../../components/CarCard";
 import { ROUTES } from "../../constants";
 
 export default function SeleccionPage() {
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  // Renderizar loading hasta que el componente esté montado
+  if (!hasMounted) {
+    return <div className="loading">Cargando...</div>;
+  }
+
+  return <MountedSeleccionPage />;
+}
+
+function MountedSeleccionPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+
+  // Obtener token directamente de la sesión
+  const token = (session as any)?.accessToken;
+
   const [cars, setCars] = useState<Car[]>([]);
   const [filteredCars, setFilteredCars] = useState<Car[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,7 +55,10 @@ export default function SeleccionPage() {
       try {
         setLoading(true);
         setError(null);
-        const carsData = await getCars();
+        console.log('🔄 Cargando autos con token:', !!token);
+        const carsData = await getCars(token);
+        console.log('📋 Datos recibidos:', carsData);
+        console.log('📋 Primer auto ejemplo:', carsData[0]);
         setCars(carsData);
         setFilteredCars(carsData);
       } catch (error) {
@@ -48,13 +70,15 @@ export default function SeleccionPage() {
       }
     };
 
-    if (session) {
+    if (session && token) {
       loadCars();
     }
-  }, [session]);
+  }, [session, token]);
 
   useEffect(() => {
     let filtered = cars;
+    console.log('🔍 Aplicando filtros:', { searchTerm, yearFilter, brandFilter });
+    console.log('🔍 Total autos:', cars.length);
 
     // Búsqueda por texto (marca, modelo, placa)
     if (searchTerm.trim()) {
@@ -65,25 +89,35 @@ export default function SeleccionPage() {
         car.plateNumber.toLowerCase().includes(search) ||
         car.color.toLowerCase().includes(search)
       );
+      console.log('🔍 Después de búsqueda:', filtered.length);
     }
 
-    // Filtro por año
+    // Filtro por año - convertir ambos a string para comparar
     if (yearFilter) {
-      filtered = filtered.filter(car => car.year === yearFilter);
+      console.log('🔍 Filtrando por año:', yearFilter);
+      console.log('🔍 Años disponibles:', cars.map(car => `${car.year} (${typeof car.year})`));
+      filtered = filtered.filter(car => {
+        const match = String(car.year) === String(yearFilter);
+        console.log(`🔍 ${car.brand} ${car.model} - año: ${car.year} (${typeof car.year}) vs ${yearFilter} = ${match}`);
+        return match;
+      });
+      console.log('🔍 Después de filtro año:', filtered.length);
     }
 
     // Filtro por marca
     if (brandFilter) {
       filtered = filtered.filter(car => car.brand.toLowerCase() === brandFilter.toLowerCase());
+      console.log('🔍 Después de filtro marca:', filtered.length);
     }
 
+    console.log('🔍 Resultado final:', filtered.length);
     setFilteredCars(filtered);
   }, [cars, searchTerm, yearFilter, brandFilter]);
 
   const handleCreateCar = async (data: CarFormData) => {
     setIsSubmitting(true);
     try {
-      const newCar = await createCar(data);
+      const newCar = await createCar(data, token);
       setCars(prev => [...prev, newCar]);
       setError(null);
     } catch (error) {
@@ -100,7 +134,7 @@ export default function SeleccionPage() {
 
     setIsSubmitting(true);
     try {
-      const updatedCar = await updateCar(editingCar.id, data);
+      const updatedCar = await updateCar(editingCar.id, data, token);
       setCars(prev => prev.map(car => car.id === editingCar.id ? updatedCar : car));
       setError(null);
     } catch (error) {
@@ -117,7 +151,7 @@ export default function SeleccionPage() {
 
     if (window.confirm(`¿Estás seguro de que quieres eliminar el auto ${car.brand} ${car.model}?`)) {
       try {
-        await deleteCar(car.id);
+        await deleteCar(car.id, token);
         setCars(prev => prev.filter(c => c.id !== car.id));
         setError(null);
       } catch (error) {
@@ -149,7 +183,7 @@ export default function SeleccionPage() {
   };
 
   // Obtener años únicos para el filtro
-  const uniqueYears = [...new Set(cars.map(car => car.year))].sort((a, b) => b.localeCompare(a));
+  const uniqueYears = [...new Set(cars.map(car => String(car.year)))].sort((a, b) => b.localeCompare(a));
 
   // Obtener marcas únicas para el filtro
   const uniqueBrands = [...new Set(cars.map(car => car.brand))].sort();
@@ -169,7 +203,9 @@ export default function SeleccionPage() {
         <div className="header-content">
           <h1>Sistema de Gestión de Autos</h1>
           <div className="header-right">
-            <span className="user-info">Hola, {session.user?.email}</span>
+            <span className="user-info">
+              Hola, {session.user?.name || (session.user as any)?.username || session.user?.email?.split('@')[0] || 'Usuario'}
+            </span>
             <button
               onClick={() => signOut({ callbackUrl: ROUTES.LOGIN })}
               className="logout-btn"
