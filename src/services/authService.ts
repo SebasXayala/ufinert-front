@@ -1,4 +1,3 @@
-// src/services/authService.ts
 import { delay } from '../utils';
 
 // Interfaces
@@ -42,11 +41,6 @@ const config: AuthConfig = {
     useMockData: process.env.NEXT_PUBLIC_USE_MOCK === 'true',
 };
 
-// Validar configuración al inicio
-if (!config.useMockData && !config.baseUrl) {
-    console.warn('⚠️ NEXT_PUBLIC_BACKEND_URL no está configurada. Usando mock data como fallback.');
-}
-
 // HTTP utilities
 const createHeaders = (): HeadersInit => ({
     'Content-Type': 'application/json',
@@ -62,17 +56,8 @@ const parseApiResponse = async (response: Response): Promise<any> => {
         try {
             const errorData = JSON.parse(errorText);
             errorMessage = errorData.message || errorData.error || errorMessage;
-
-            // Log detallado para debugging
-            console.error('Auth API Error Details:', {
-                status: response.status,
-                statusText: response.statusText,
-                errorData,
-                errorText
-            });
         } catch {
-            // Log el texto crudo si no se puede parsear como JSON
-            console.error('Raw Auth API Error:', errorText);
+            // Keep original error if parsing fails
         }
 
         throw new Error(errorMessage);
@@ -85,7 +70,6 @@ const parseApiResponse = async (response: Response): Promise<any> => {
 const registerUserMock = async (userData: RegisterRequest): Promise<RegisterResponse> => {
     await delay(1000);
 
-    // Simular respuesta exitosa
     return {
         message: 'Usuario registrado exitosamente',
         user: {
@@ -99,13 +83,12 @@ const registerUserMock = async (userData: RegisterRequest): Promise<RegisterResp
 const loginUserMock = async (loginData: LoginRequest): Promise<AuthResponse> => {
     await delay(800);
 
-    // Simular login exitoso
     return {
-        token: 'mock-jwt-token-' + Date.now(),
+        token: 'mock-jwt-token-for-testing',
         user: {
             id: 1,
             username: loginData.username,
-            email: 'user@example.com',
+            email: `${loginData.username}@ejemplo.com`,
         }
     };
 };
@@ -115,9 +98,6 @@ const registerUserApi = async (userData: RegisterRequest): Promise<RegisterRespo
     if (!config.baseUrl) {
         throw new Error('Backend URL not configured');
     }
-
-    console.log('Sending register data to API:', userData);
-    console.log('API URL:', createAuthUrl('/register'));
 
     const response = await fetch(createAuthUrl('/register'), {
         method: 'POST',
@@ -133,9 +113,6 @@ const loginUserApi = async (loginData: LoginRequest): Promise<AuthResponse> => {
     if (!config.baseUrl) {
         throw new Error('Backend URL not configured');
     }
-
-    console.log('Sending login data to API:', loginData);
-    console.log('API URL:', createAuthUrl('/login'));
 
     const response = await fetch(createAuthUrl('/login'), {
         method: 'POST',
@@ -153,7 +130,6 @@ export const registerUser = async (userData: RegisterRequest): Promise<RegisterR
         return config.useMockData ? await registerUserMock(userData) : await registerUserApi(userData);
     } catch (error) {
         if (error instanceof Error && error.message.includes('Failed to fetch')) {
-            console.warn('Auth API not available, falling back to mock data');
             return registerUserMock(userData);
         }
         throw error;
@@ -165,7 +141,6 @@ export const loginUser = async (loginData: LoginRequest): Promise<AuthResponse> 
         return config.useMockData ? await loginUserMock(loginData) : await loginUserApi(loginData);
     } catch (error) {
         if (error instanceof Error && error.message.includes('Failed to fetch')) {
-            console.warn('Auth API not available, falling back to mock data');
             return loginUserMock(loginData);
         }
         throw error;

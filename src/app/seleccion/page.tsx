@@ -204,7 +204,7 @@ function MountedSeleccionPage() {
           <h1>Sistema de Gestión de Autos</h1>
           <div className="header-right">
             <span className="user-info">
-              Hola, {session.user?.name || (session.user as any)?.username || session.user?.email?.split('@')[0] || 'Usuario'}
+              Hola, {(session.user as any)?.username || session.user?.name || 'Usuario'}
             </span>
             <button
               onClick={() => signOut({ callbackUrl: ROUTES.LOGIN })}

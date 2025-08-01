@@ -1,4 +1,3 @@
-// src/services/autoService.ts
 import { mockCars } from '../data/mockCars';
 import { generateId, delay } from '../utils';
 
@@ -40,11 +39,6 @@ const config: ApiConfig = {
   useMockData: process.env.NEXT_PUBLIC_USE_MOCK === 'true',
 };
 
-// Validar configuración al inicio
-if (!config.useMockData && !config.baseUrl) {
-  console.warn('⚠️ NEXT_PUBLIC_BACKEND_URL no está configurada. Usando mock data como fallback.');
-}
-
 // HTTP utilities
 const createHeaders = (token?: string): HeadersInit => ({
   'Content-Type': 'application/json',
@@ -61,17 +55,8 @@ const parseApiResponse = async (response: Response): Promise<any> => {
     try {
       const errorData = JSON.parse(errorText);
       errorMessage = errorData.message || errorData.error || errorMessage;
-
-      // Log detallado para debugging
-      console.error('API Error Details:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorData,
-        errorText
-      });
     } catch {
-      // Log el texto crudo si no se puede parsear como JSON
-      console.error('Raw API Error:', errorText);
+      // Keep original error if parsing fails
     }
 
     throw new Error(errorMessage);
@@ -113,7 +98,6 @@ const getCarsFromMock = async (): Promise<Car[]> => {
 };
 
 const createCarInMock = async (carData: CarCreateRequest): Promise<Car> => {
-  // Validar formato de placa
   if (!validatePlateNumber(carData.plateNumber)) {
     throw new Error('La placa debe tener el formato de 3 letras seguidas de 3 números, por ejemplo: ABC123');
   }
@@ -122,14 +106,13 @@ const createCarInMock = async (carData: CarCreateRequest): Promise<Car> => {
   const newCar: Car = {
     ...carData,
     id: generateId(),
-    plateNumber: carData.plateNumber.toUpperCase() // Normalizar a mayúsculas
+    plateNumber: carData.plateNumber.toUpperCase()
   };
   mockStorage.push(newCar);
   return newCar;
 };
 
 const updateCarInMock = async (id: string, carData: Partial<CarCreateRequest>): Promise<Car> => {
-  // Validar formato de placa si se está actualizando
   if (carData.plateNumber && !validatePlateNumber(carData.plateNumber)) {
     throw new Error('La placa debe tener el formato de 3 letras seguidas de 3 números, por ejemplo: ABC123');
   }
@@ -144,7 +127,6 @@ const updateCarInMock = async (id: string, carData: Partial<CarCreateRequest>): 
   const updatedCar = {
     ...mockStorage[index],
     ...carData,
-    // Normalizar placa a mayúsculas si está presente
     ...(carData.plateNumber && { plateNumber: carData.plateNumber.toUpperCase() })
   };
   mockStorage[index] = updatedCar;
@@ -182,21 +164,15 @@ const createCarInApi = async (carData: CarCreateRequest, token?: string): Promis
     throw new Error('Backend URL not configured');
   }
 
-  // Validar formato de placa antes de enviar
   if (!validatePlateNumber(carData.plateNumber)) {
     throw new Error('La placa debe tener el formato de 3 letras seguidas de 3 números, por ejemplo: ABC123');
   }
 
-  // El backend espera year como string, no como número
   const payload = {
     ...carData,
-    year: carData.year.toString(), // Asegurar que year sea string
-    plateNumber: carData.plateNumber.toUpperCase() // Normalizar a mayúsculas
+    year: carData.year.toString(),
+    plateNumber: carData.plateNumber.toUpperCase()
   };
-
-  console.log('Sending car data to API:', payload);
-  console.log('API URL:', createApiUrl(''));
-  console.log('Headers:', createHeaders(token));
 
   const response = await fetch(createApiUrl(''), {
     method: 'POST',
@@ -209,16 +185,13 @@ const createCarInApi = async (carData: CarCreateRequest, token?: string): Promis
 };
 
 const updateCarInApi = async (id: string, carData: Partial<CarCreateRequest>, token?: string): Promise<Car> => {
-  // Validar formato de placa si se está actualizando
   if (carData.plateNumber && !validatePlateNumber(carData.plateNumber)) {
     throw new Error('La placa debe tener el formato de 3 letras seguidas de 3 números, por ejemplo: ABC123');
   }
 
   const payload = {
     ...carData,
-    // Asegurar que year sea string si está presente
     ...(carData.year && { year: carData.year.toString() }),
-    // Normalizar placa a mayúsculas si está presente
     ...(carData.plateNumber && { plateNumber: carData.plateNumber.toUpperCase() }),
   };
 
@@ -247,7 +220,6 @@ export const getCars = async (token?: string): Promise<Car[]> => {
     return config.useMockData ? await getCarsFromMock() : await getCarsFromApi(token);
   } catch (error) {
     if (error instanceof Error && error.message.includes('Failed to fetch')) {
-      console.warn('API not available, falling back to mock data');
       return getCarsFromMock();
     }
     throw error;
@@ -259,7 +231,6 @@ export const createCar = async (carData: CarCreateRequest, token?: string): Prom
     return config.useMockData ? await createCarInMock(carData) : await createCarInApi(carData, token);
   } catch (error) {
     if (error instanceof Error && error.message.includes('Failed to fetch')) {
-      console.warn('API not available, falling back to mock data');
       return createCarInMock(carData);
     }
     throw error;
@@ -273,7 +244,6 @@ export const updateCar = async (id: string | number, carData: Partial<CarCreateR
     return config.useMockData ? await updateCarInMock(carId, carData) : await updateCarInApi(carId, carData, token);
   } catch (error) {
     if (error instanceof Error && error.message.includes('Failed to fetch')) {
-      console.warn('API not available, falling back to mock data');
       return updateCarInMock(carId, carData);
     }
     throw error;
@@ -287,7 +257,6 @@ export const deleteCar = async (id: string | number, token?: string): Promise<vo
     return config.useMockData ? await deleteCarFromMock(carId) : await deleteCarFromApi(carId, token);
   } catch (error) {
     if (error instanceof Error && error.message.includes('Failed to fetch')) {
-      console.warn('API not available, falling back to mock data');
       return deleteCarFromMock(carId);
     }
     throw error;
